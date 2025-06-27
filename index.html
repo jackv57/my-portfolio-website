@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jack - Make 自動化作品集 (Gemini AI 整合)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #f8f9fa; /* 淡灰色背景 */
+            color: #343a40; /* 深灰色文字 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* 圓角 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tag {
+            background-color: #e9ecef; /* 淺灰色標籤背景 */
+            color: #495057; /* 標籤文字顏色 */
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* 膠囊形狀 */
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+        .section-title {
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700;
+            margin-bottom: 2rem; /* 32px */
+            text-align: center;
+            color: #003366; /* 深藍色標題 */
+        }
+        .project-image-container {
+            border: 1px solid #dee2e6; /* 圖片邊框 */
+            border-radius: 0.5rem; /* 圖片圓角 */
+            overflow: hidden; /* 確保圖片在邊框內 */
+            margin-bottom: 1rem;
+        }
+        .project-image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .btn-primary {
+            background-color: #0056b3; /* 主按鈕顏色 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background-color: #003d80; /* 按鈕懸停顏色 */
+        }
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        /* 導航列樣式 */
+        nav {
+            background-color: rgba(255, 255, 255, 0.9); /* 半透明白色背景 */
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+        }
+        /* SVG 圖示顏色 */
+        .skill-icon {
+            color: #0056b3; /* 圖示顏色 */
+        }
+        /* Gemini 功能相關樣式 */
+        .gemini-result-box {
+            white-space: pre-wrap; /* 保留換行和空格 */
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .spinner {
+            border-color: rgba(255, 255, 255, 0.2);
+            border-top-color: white;
+        }
+        /* 證書卡片樣式 */
+        .cert-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media (min-width: 768px) {
+            .cert-card {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 導航列 -->
+    <nav class="sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto px-6">
+            <div class="flex justify-between items-center py-3">
+                <a href="#" class="text-xl lg:text-2xl font-bold text-gray-800">Jack / 自動化專家</a>
+                
+                <!-- 手機版漢堡選單按鈕 -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-800 hover:text-blue-600 focus:outline-none">
+                        <svg id="menu-open-icon" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                        <svg id="menu-close-icon" class="h-6 w-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 桌面版導覽列 -->
+                <div class="hidden md:flex md:items-center">
+                    <a href="#about" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">關於我</a>
+                    <a href="#skills" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">我的技能</a>
+                    <a href="#certifications" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">專業認證</a>
+                    <a href="#portfolio" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">作品集</a>
+                    <a href="#idea-generator" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">✨ AI 點子</a>
+                    <a href="#contact" class="nav-link text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">聯絡我</a>
+                </div>
+            </div>
+
+            <!-- 手機版展開選單 -->
+            <div id="mobile-menu" class="hidden md:hidden pb-3">
+                <a href="#about" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">關於我</a>
+                <a href="#skills" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">我的技能</a>
+                <a href="#certifications" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">專業認證</a>
+                <a href="#portfolio" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">作品集</a>
+                <a href="#idea-generator" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">✨ AI 點子</a>
+                <a href="#contact" class="nav-link block text-gray-800 hover:bg-gray-200 px-3 py-2 rounded-md">聯絡我</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 關於我 (Hero Section) -->
+    <section id="about" class="bg-white py-20 md:py-24">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-10 md:gap-20 items-center">
+                <!-- Left Column: Text -->
+                <div class="text-center md:text-left">
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">我是 Jack，<br>熱衷於自動化的創意人。</h1>
+                    <div class="space-y-4 text-lg text-gray-600">
+                        <p><strong class="font-semibold text-gray-800">我的理念：</strong> 每個重複性工作都是創新的機會。我擅長從不同角度思考問題，結合創意與技術實力，為企業打造獨特且高效的自動化體驗。</p>
+                        <p><strong class="font-semibold text-gray-800">專業背景：</strong> 擁有豐富的跨領域整合經驗，熟悉各種商業場景與技術挑戰。無論是新創公司的敏捷需求，還是大型企業的複雜系統，我都能提供量身訂製的自動化策略。</p>
+                        <p><strong class="font-semibold text-gray-800">我的使命：</strong> 讓自動化不再是冰冷的技術，而是充滿溫度的創新工具。透過持續學習與實踐，我期望為每位合作夥伴帶來超越期待的自動化體驗。</p>
+                    </div>
+                </div>
+                <!-- Right Column: Image - UPDATED -->
+                <div class="mt-8 md:mt-0">
+                    <img src="https://i.ibb.co/0VDWFsnh/00594-E28-5-ED5-48-C8-8-A69-F13-D66282547.png" 
+                         alt="Jack 的 Make 風格形象圖" 
+                         class="rounded-lg shadow-2xl w-full h-auto">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 我的技能 (Skills Section) -->
+    <section id="skills" class="py-16 md:py-24">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title">我的技能</h2>
+            <p class="text-center text-lg text-gray-700 mb-12 max-w-2xl mx-auto">我致力於提供以使用者為中心且引人入勝的設計方案。以下是我的核心技能：</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 技能卡片... (此處內容不變) -->
+                <div class="card p-6">
+                    <div class="flex items-center mb-4">
+                        <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">社群平台整合</h3>
+                    </div>
+                    <p class="text-gray-600">熟練整合 Facebook、Instagram、LinkedIn、YouTube 等社群媒體平台，自動化內容發布、留言回覆、數據分析與粉絲互動管理。</p>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center mb-4">
+                        <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">工作流程設計</h3>
+                    </div>
+                    <p class="text-gray-600">擅長分析業務需求，設計高效自動化流程架構，優化作業步驟並建立智能決策邏輯，提升整體營運效率。</p>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center mb-4">
+                         <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7s0 0 .001 0M12 12c0 .001 0 .001 0 0m0 0c0 .001 0 .001 0 0m-8 4s0 0 .001 0M12 16c0 .001 0 .001 0 0m0 0c0 .001 0 .001 0 0m8-4s0 0 .001 0M20 7s0 0-.001 0"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">數據處理自動化</h3>
+                    </div>
+                    <p class="text-gray-600">專精於數據收集、清理、轉換與分發流程，建立自動化數據管道，確保資訊準確性與即時性。</p>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center mb-4">
+                        <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">通知與警報系統</h3>
+                    </div>
+                    <p class="text-gray-600">建置智能通知機制，整合 Email、Slack、Teams 等通訊工具，實現即時狀態更新與異常警報自動發送。</p>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center mb-4">
+                        <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">電商自動化解決方案</h3>
+                    </div>
+                    <p class="text-gray-600">專門處理電商平台整合，包含訂單處理、庫存管理、客服自動回覆與行銷活動自動化執行。</p>
+                </div>
+                <div class="card p-6">
+                     <div class="flex items-center mb-4">
+                        <svg class="skill-icon w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <h3 class="text-xl font-semibold text-gray-800">API 串接整合</h3>
+                    </div>
+                    <p class="text-gray-600">精通各種第三方服務 API 連接，包含 REST API、Webhook 設定與 OAuth 認證，實現跨平台數據無縫傳輸與系統整合。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 專業認證 (Certifications Section) - NEW SECTION -->
+    <section id="certifications" class="bg-white py-16 md:py-24">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title">專業認證</h2>
+            <p class="text-center text-lg text-gray-700 mb-12 max-w-2xl mx-auto">透過持續學習與實踐，我取得了以下專業認證，證明了在自動化領域的技能與知識。</p>
+            <div class="space-y-8 max-w-4xl mx-auto">
+                <!-- 證書卡片 1 -->
+                <div class="card p-6 md:p-8 cert-card">
+                    <div class="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 mb-6 md:mb-0 md:mr-8">
+                        <!-- 請將 src 換成您自己的證書圖片連結 -->
+                        <img src="https://placehold.co/150x150/6D28D9/FFFFFF?text=Make+Badge" alt="Make Intermediate Badge" class="rounded-full w-full h-full object-cover shadow-lg">
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-2">Make Intermediate</h3>
+                        <p class="font-medium text-gray-500 mb-4">由 Make 官方頒發</p>
+                        <p class="text-gray-600 mb-4">
+                            此徽章的獲得者已完成 Make 中級課程中的所有課程，並擴展了他們對多種自動化主題、迭代器和陣列聚合器、webhook、HTTP 和錯誤處理的知識。
+                        </p>
+                        <!-- 如果有證書驗證連結，可以放在這裡 -->
+                        <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">了解更多 &rarr;</a>
+                    </div>
+                </div>
+                <!-- 證書卡片 2 (範例) -->
+                 <div class="card p-6 md:p-8 cert-card">
+                    <div class="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 mb-6 md:mb-0 md:mr-8">
+                        <!-- 請將 src 換成您自己的證書圖片連結 -->
+                        <img src="https://placehold.co/150x150/22C55E/FFFFFF?text=證書+2" alt="另一張證書" class="rounded-full w-full h-full object-cover shadow-lg">
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-2">另一張專業證書</h3>
+                        <p class="font-medium text-gray-500 mb-4">由 某某機構 頒發</p>
+                        <p class="text-gray-600 mb-4">
+                            這是一段關於這張證書的簡短描述，說明您透過它學到了什麼技能，或是證明了您在哪方面的專業能力。
+                        </p>
+                        <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">查看證書 &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 作品集 (Portfolio Section) -->
+    <section id="portfolio" class="bg-gray-100 py-16 md:py-24">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title">我的作品集</h2>
+            <p class="text-center text-lg text-gray-700 mb-12 max-w-2xl mx-auto">以下是我運用 Make (Integromat) 打造的部分自動化流程專案：</p>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-10">
+                <!-- 作品卡片 1 -->
+                <div class="card p-6 md:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-3">每日記帳自動化</h3>
+                    <div class="mb-4">
+                        <span class="tag">Webhook</span><span class="tag">OpenRouter (AI)</span><span class="tag">Google Sheets</span><span class="tag">Google Calendar</span><span class="tag">LINE Notify</span><span class="tag">JSON</span>
+                    </div>
+                    <div class="project-image-container">
+                        <img src="https://i.ibb.co/nMWHqY3R/2025-06-24-4-45-06.png" alt="每日記帳自動化流程圖" class="rounded-lg shadow-md">
+                    </div>
+                    <p class="text-gray-600 mb-4">
+                        這個自動化流程旨在簡化每日的記帳過程。使用者可以透過 LINE 發送消費記錄，經由 Webhook 觸發 Make 流程。流程會使用 OpenRouter (AI 模型) 解析訊息內容，提取消費項目、金額與日期，並自動將這些資訊記錄到 Google Sheets。同時，它還會在 Google Calendar 建立對應的事件，並透過 LINE 通知使用者記錄完成。
+                    </p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">查看詳細 (可連結至更詳細的說明或影片) &rarr;</a>
+                </div>
+                <!-- 作品卡片 2 (範例) -->
+                <div class="card p-6 md:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-3">社群內容自動發布</h3>
+                     <div class="mb-4">
+                        <span class="tag">Google Sheets</span><span class="tag">Facebook Pages</span><span class="tag">Twitter</span><span class="tag">Scheduler</span><span class="tag">AI Content Generation</span>
+                    </div>
+                    <div class="project-image-container">
+                        <img src="https://i.ibb.co/xSCzPfbC/IMG-1900.jpg" alt="社群內容自動發布流程圖" class="rounded-lg shadow-md">
+                    </div>
+                    <p class="text-gray-600 mb-4">
+                        設定排程從 Google Sheets 讀取預先準備好的社群貼文內容（或透過 AI 生成初步內容），並在指定時間自動發布到 Facebook 粉絲專頁和 Twitter。有效管理社群媒體的內容排程，節省手動發布的時間。
+                    </p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">查看詳細 &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gemini AI 自動化點子產生器 -->
+    <section id="idea-generator" class="py-16 md:py-24">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="section-title">✨ 自動化點子產生器</h2>
+            <p class="text-lg text-gray-700 mb-8 max-w-xl mx-auto">不確定哪些重複性工作可以自動化嗎？輸入您的產業、職位或您覺得繁瑣的任務，讓 AI 為您提供 Make 自動化流程的建議！</p>
+            <div class="max-w-2xl mx-auto">
+                <textarea id="idea-input" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" rows="4" placeholder="例如：我是一名經營 IG 的美食部落客，每天要回覆很多類似的私訊，像是詢問餐廳地址、營業時間等等..."></textarea>
+                <button id="generate-idea-btn" class="btn-primary mt-4 inline-flex items-center text-lg px-8 py-3">
+                    <span id="idea-spinner" class="hidden"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span>
+                    產生自動化建議
+                </button>
+            </div>
+            <div id="idea-result-container" class="mt-8 text-left max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md hidden">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">AI 流程建議：</h3>
+                <div id="idea-result" class="gemini-result-box"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 聯絡方式 (Contact Section) - UPDATED -->
+    <section id="contact" class="bg-gray-100 py-16 md:py-24">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="section-title">聯絡我</h2>
+            <p class="text-lg text-gray-700 mb-8 max-w-xl mx-auto">對我的自動化服務感興趣嗎？或是有任何問題想與我討論？歡迎點擊下方按鈕，直接透過 LINE 與我聯繫！</p>
+            <div class="flex justify-center">
+                 <!-- LINE 連結已更新 -->
+                 <a href="https://lin.ee/AwPW4yo" target="_blank" rel="noopener noreferrer" 
+                    class="inline-flex items-center text-lg font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors duration-300 px-8 py-4 rounded-lg shadow-lg">
+                    <svg class="w-7 h-7 mr-3" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16.43,14.24l-1.43,1.43c-0.49,0.49-1.22,0.56-1.78,0.18-1.95-1.34-3.53-2.92-4.88-4.88-0.38-0.56-0.31-1.29,0.18-1.78l1.43-1.43c0.49-0.49,0.49-1.28,0-1.77l-2.22-2.22c-0.49-0.49-1.28-0.49-1.77,0l-1.43,1.43c-1.23,1.23-1.03,3.29,0.49,5.35,2.15,2.94,4.92,5.7,7.86,7.86,2.06,1.52,4.12,1.72,5.35,0.49l1.43-1.43c0.49-0.49,0.49-1.28,0-1.77l-2.22-2.22C17.71,13.75,16.92,13.75,16.43,14.24z M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10c5.52,0,10-4.48,10-10S17.52,2,12,2z"/>
+                    </svg>
+                    透過 LINE 聯絡我
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 頁腳 -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; <span id="currentYear"></span> Jack - Make 自動化專家. 保留所有權利.</p>
+            <p class="text-sm mt-1">網站使用 Tailwind CSS 與 Gemini API 建置</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- 頁面基礎功能 ---
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const menuOpenIcon = document.getElementById('menu-open-icon');
+        const menuCloseIcon = document.getElementById('menu-close-icon');
+
+        // 手機版選單開關
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            menuOpenIcon.classList.toggle('hidden');
+            menuCloseIcon.classList.toggle('hidden');
+        });
+
+        // 點擊連結後自動收合選單 (手機版)
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault(); // 防止預設的跳轉行為
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                    menuOpenIcon.classList.remove('hidden');
+                    menuCloseIcon.classList.add('hidden');
+                }
+                // 平滑滾動
+                const targetId = link.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                     targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // --- Gemini API 整合 (點子產生器) ---
+        const ideaInput = document.getElementById('idea-input');
+        const generateIdeaBtn = document.getElementById('generate-idea-btn');
+        const ideaSpinner = document.getElementById('idea-spinner');
+        const ideaResultContainer = document.getElementById('idea-result-container');
+        const ideaResult = document.getElementById('idea-result');
+        
+        /**
+         * 透過後端函式呼叫 Gemini API
+         * @param {string} prompt - 傳送給模型的提示文字
+         * @returns {Promise<string>} - 回傳模型的文字回應
+         */
+        async function callApiViaBackend(prompt) {
+            // 後端函式的網址
+            const backendUrl = '/.netlify/functions/getAiSuggestion';
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt }) // 將 prompt 包在 JSON 物件中
+                });
+
+                if (!response.ok) {
+                    throw new Error(`後端請求失敗，狀態碼：${response.status}`);
+                }
+                
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                     if(result.promptFeedback && result.promptFeedback.blockReason) {
+                         return `您的請求可能包含敏感內容，已被系統阻擋。原因：${result.promptFeedback.blockReason}`;
+                    }
+                    return "抱歉，無法從 AI 取得有效回應。";
+                }
+            } catch (error) {
+                console.error("呼叫後端時發生錯誤:", error);
+                return "抱歉，連線至 AI 服務時發生錯誤，請稍後再試。";
+            }
+        }
+
+        // 處理自動化點子產生
+        generateIdeaBtn.addEventListener('click', async () => {
+            const userInput = ideaInput.value.trim();
+            if (!userInput) {
+                alert("請輸入您的情境或問題！");
+                return;
+            }
+
+            // 顯示載入中狀態
+            ideaSpinner.classList.remove('hidden');
+            generateIdeaBtn.disabled = true;
+            ideaResultContainer.classList.add('hidden');
+            
+            const prompt = `你是一位 Make.com 自動化專家，請基於以下使用者的情revolve或問題，為他設計一個或多個 Make.com 的自動化流程建議。請用繁體中文回答，並以條列式、清晰的步驟說明每個流程的觸發（Trigger）和主要操作（Actions）。你的回答應該直接開始，不要有開場白。情境如下：「${userInput}」`;
+
+            // 改為呼叫新的後端函式
+            const resultText = await callApiViaBackend(prompt);
+            
+            // 顯示結果
+            ideaResult.textContent = resultText;
+            ideaResultContainer.classList.remove('hidden');
+            ideaSpinner.classList.add('hidden');
+            generateIdeaBtn.disabled = false;
+            
+            // 滾動到結果區域
+            ideaResultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+    </script>
+</body>
+</html>

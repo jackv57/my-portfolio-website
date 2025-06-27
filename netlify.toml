@@ -1,0 +1,5 @@
+# Netlify Functions configuration
+[functions]
+  directory = "netlify/functions/"
+  # 這行是告訴 Netlify 如何打包您的函式
+  node_bundler = "esbuild"
